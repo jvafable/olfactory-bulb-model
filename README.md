@@ -2,7 +2,7 @@
 
 ### Overview 
 
-This repository contains the simulation code and results for the olfactory bulb spike train model used in my master's research paper titled "Computational Tools for the Simulation and Analysis of Spike Trains". 
+This repository contains the simulation code and results for the olfactory bulb spike train model used in my master's research paper titled "Computational Tools for the Simulation and Analysis of Spike Trains" written under the supervision of Prof. Paul Marriott. The paper was submitted in partial fulfillment of the requirements for the degree of Master of Mathematics in Statistics at the University of Waterloo.
 
 The paper aims to illustrate a workflow for running spiking neuron network simulations written for NEURON, a popular simulation environment for modeling networks of neurons ([NEURON 2024](#references)), by interfacing simulations through Python, a popular high-level programming language, and performing statistical analyses through R, a programming language for statistical computing and data analysis.
 
