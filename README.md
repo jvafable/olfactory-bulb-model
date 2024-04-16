@@ -8,4 +8,4 @@ model was originally created by  [Li and Cleland (2017)](#references).
 
 ### References
 
-- Li, G., & Cleland, T. A. (2017). A coupled-oscillator model of olfactory bulb gamma oscillations. *PLoS Comput Biol*, 13(11), e1005760. doi: [10.1371/journal.pcbi.1005760](https://doi.org/10.1371/journal.pcbi.1005760)
+- Li, G, and TA Cleland. 2017. “A coupled-oscillator model of olfactory bulb gamma oscillations.” *PLoS Comput Biol* 13, no. 11 (November 15, 2017): e1005760. [](https://doi.org/10.1371/journal.pcbi.1005760.)
