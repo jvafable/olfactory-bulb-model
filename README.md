@@ -1,6 +1,6 @@
 # Olfactory Bulb Model 
 
-## Overview 
+### Overview 
 
 This repository contains the simulation code and results for the olfactory bulb spike train model used in my master's research paper titled "Computational Tools for the Simulation and Analysis of Spike Trains". 
 
