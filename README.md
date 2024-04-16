@@ -24,7 +24,7 @@ The figure above depicts a spike train with multiple spikes occurring within 100
 
 ![Raster Plot](figures/fig2d2-mc-raster.png)
 
-When visualizing the activity of a network of neurons, using the voltage plot for each individual neuron can be unintuitive to interpret. Since we focus mostly on whether a neuron fires or not, we can instead use a raster plot. The raster plot represents the firing of a network of neurons across time. Each small bar represents the firing of a neuron at a specific point in time. The raster plot above shows the simulated network activity of a population of 25 mitral cells, a type of neuron. The x-axis denotes the time of firing while the y-axis labels which mitral cell is firing.
+When visualizing the activity of a network of neurons, using the voltage plot for each individual neuron can be unintuitive to interpret. Since we focus mostly on whether a neuron fires or not, we can instead use a raster plot. The raster plot represents the firing of a network of neurons across time. Each small bar represents the firing of a neuron at a specific point in time. The raster plot above shows the simulated network activity of a population of 25 mitral cells, a type of neuron. The x-axis denotes the time of firing while the y-axis labels which mitral cell is firing. With this visualization, we can much better visualize the firing rates of each neuron as well as observe any synchronicity and coherence at a glance.
 
 
 ## Usage and Installation
