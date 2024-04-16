@@ -1,0 +1,594 @@
+---
+title: "Plotting"
+author: "JV Afable"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r}
+setwd("C:/Users/JV/Desktop/masters/data0_default")
+tt <- scan("tt", quiet=TRUE)
+Vam <- scan("Vam", quiet=TRUE)
+```
+
+```{r}
+plot(tt, Vam, type='l', xlim=c(2000, 3000))
+```
+
+## Fig 2A
+
+```{r}
+Odor <- scan("Odor", quiet=TRUE)
+names(Odor) <- ifelse((1:25 %% 5) == 0, 1:25, rep(NA, 25))
+
+type <- "MC"
+n <- c("MC" = 5, "GC" = 10, "PGC" = 5)[type]
+prefix <- c("MC" = "Ms", "GC" = "Gs", "PGC" = "Ps")[type]
+combs <-expand.grid(j=seq(0, n-1), i=seq(0, n-1))
+spike_files <- sprintf("%s_%d_%d", prefix, combs$i, combs$j)
+spike_times <- lapply(spike_files, 
+                      function(fname) {
+                          tryCatch(
+                              read.table(fname)$V1,
+                              error=function(e) numeric(0))}
+                      )
+x_values <- sapply(spike_times, function(x) length(x[x >= 2000]))
+names(x_values) <- ifelse((1:25 %% 5) == 0, 1:25, rep(NA, 25))
+
+# par(mfrow=c(2, 1), mai=c(2,1,0.15,0.1))
+barplot(Odor, col="black",
+        ylab="", yaxt="n", ylim=c(0, 1))
+axis(1, at=0)
+axis(2, at=seq(0, 1, 0.5))
+title(xlab = "MC #", ylab = "Input (nA)", cex.lab = 1.2, font.lab = 2)
+
+barplot(x_values, col="black",
+        ylab="", yaxt="n", ylim=c(0, 40))
+axis(1, at=0)
+axis(2, at=seq(0, 40, 20))
+title(xlab = "MC #", ylab = "Firing rate (Hz)", cex.lab = 1.2, font.lab = 2)
+```
+
+
+## Fig 2B
+
+```{r}
+library(signal)
+
+nextpow2 <- function(i) {
+    for (ii in 0:31) {
+        if (i < 2^ii) {
+            return(ii)
+        }
+    }
+    return(NULL)
+}
+# Set parameters
+FILORDER <- 1000
+DT <- 0.2  # sampling time in ms
+Fs <- 1 / DT * 1000  # sampling frequency in Hz
+Fc <- c(10, 100)  # Cut-off frequencies in Hz
+Wc <- Fc / (Fs / 2)  # Normalize the frequencies
+
+# Extract the desired portion of the signal
+T1 <- 2000
+T2 <- 3000
+n1 <- T1 / DT + 1
+n2 <- T2 / DT
+maxlags <- 2000 
+
+t <- tt[n1:n2]
+y <- Vam[n1:n2] - mean(Vam[n1:n2])  # Detrend the data by subtracting the mean
+
+### Compute sLFP ###
+# Create the FIR filter and apply it using filtfilt
+h <- signal::fir1(FILORDER, Wc, type="pass")
+x <- signal::filtfilt(h, y)
+
+### Compute Auto-Correlation ###
+ac_results <- ccf(x, x, lag.max = maxlags, type="correlation", plot=FALSE)
+lags <- ac_results$lag
+auto_correlations <- ac_results$acf
+
+
+### Compute Power ###
+Fmax <- 100
+L <- length(y)
+NFFT <- 2^nextpow2(L)     # Next power of 2 from length of y
+pad_y <- c(y, rep(0, NFFT-L))
+Y <- fft(pad_y)/L;
+YY <- 2*abs(Y[1:(NFFT/2)])
+
+f <- (Fs/2) * seq(0, 1, length.out=NFFT/2)
+m <- Fmax/(0.5*Fs)*(0.5*NFFT);
+m <- floor(m)
+
+
+pad_x <- c(x, rep(0, NFFT-L))
+X <- fft(pad_x)/L;
+XX <- 2*abs(X[1:(NFFT/2)])
+
+
+# Plot the data
+par(mfrow=c(3, 1), cex.axis = 1.2, mai=c(0.6,0.7,0.1,0.1))
+plot(t-2000, x, type = "l", lwd = 1.75, ylim = c(-10, 10), xlab = "", xaxt="n", ylab = "", yaxt="n")
+axis(1, at = seq(0, 1000, by = 200))  # Customize the x-axis ticks as needed
+axis(2, at = seq(-10, 10, by = 10))      # Customize the y-axis ticks as needed
+title(xlab = "ms", ylab = "sLFP (mV)", cex.lab = 1.5, font.lab = 2)
+
+plot(lags*DT, auto_correlations, type = 'l', lwd = 1.75, 
+     xlab = "", xaxt="n", xlim=c(-400, 400), 
+     ylab = "", yaxt="n", ylim=c(-1, 1))
+axis(1, at=seq(-400, 400, 200))
+axis(2, at=seq(-1, 1, 1))
+title(xlab = "Lags (ms)", ylab = "ACF", cex.lab = 1.5, font.lab = 2)
+
+plot(f[1:m], XX[1:m], type='l', lwd=1.75, xlab="", xaxt="n", ylab="", yaxt="n")
+axis(1, at = seq(0, 100, by = 20)) 
+axis(2, at = seq(0, 3, by = 1))
+title(xlab = "Frequency (Hz)", ylab = "Power", cex.lab = 1.5, font.lab = 2)
+```
+
+
+
+
+```{r}
+
+plot_pair <- function(cell1, cell2, type) {
+    prefix <- c("MC" = "Vms", "GC" = "Vgb", "PGC" = "Vpb")[type]
+    vs1_name <- sprintf("%s_%d_%d", prefix, cell1[1], cell1[2])
+    vs2_name <- sprintf("%s_%d_%d", prefix, cell2[1], cell2[2])
+    vs1 <- read.table(vs1_name)$V1
+    vs2 <- read.table(vs2_name)$V1
+    # Assuming tt has been loaded
+    lwd <- 2
+    plot(tt, vs1, type="l", 
+         xlim=c(2000, 3000), xlab="",
+         ylim=c(-80, 40), ylab="mV",
+         col="blue", lwd=lwd)
+    lines(tt, vs2, type="l", xlim=c(2000, 3000), ylim=c(-80, 40), col="red", lwd=lwd)
+    legend(x = "topright",          # Position
+           legend = c(
+               sprintf("%s[%d][%d]", type, cell1[1], cell1[2]), 
+               sprintf("%s[%d][%d]", type, cell2[1], cell2[2])
+           ),  # Legend texts
+           lty = c(1, 1),           # Line types
+           col = c("blue", "red"),           # Line colors
+           lwd = lwd)   
+} 
+
+compare_pairs <- function(pair1, pair2, type) {
+    par(mfrow=c(2, 1), mai=c(0.4,0.8,0.5,0.4))
+    plot_pair(pair1[[1]], pair1[[2]], type)
+    title(type)
+    par(mai=c(0.9, 0.8, 0.1, 0.4))
+    plot_pair(pair2[[1]], pair2[[2]], type)
+    title(xlab="ms")
+}
+
+```
+
+## Fig 2C
+
+```{r}
+compare_pairs(
+    list(c(0, 1), c(4, 1)), 
+    list(c(3, 4), c(2, 4)),
+    type="MC"
+)
+```
+
+## Fig 2D1
+
+```{r}
+compare_pairs(
+    list(c(3, 2), c(4, 3)),
+    list(c(1, 1), c(1, 4)),
+    type="MC"
+)
+```
+
+## Fig 2E1
+
+```{r}
+compare_pairs(
+    list(c(0, 1), c(3, 2)),
+    list(c(2, 2), c(6, 1)),
+    type="GC"
+)
+```
+
+## Fig 2F1
+
+```{r}
+compare_pairs(
+    list(c(0, 1), c(4, 1)),
+    list(c(3, 4), c(2, 4)),
+    type="PGC"
+)
+```
+
+
+## Fig 2D2
+
+```{r}
+plot_raster <- function(type) {
+    n <- c("MC" = 5, "GC" = 10, "PGC" = 5)[type]
+    prefix <- c("MC" = "Ms", "GC" = "Gs", "PGC" = "Ps")[type]
+    combs <-expand.grid(j=seq(0, n-1), i=seq(0, n-1))
+    spike_files <- sprintf("%s_%d_%d", prefix, combs$i, combs$j)
+    spike_times <- lapply(spike_files, 
+                          function(fname) {
+                              tryCatch(
+                                  read.table(fname)$V1,
+                                  error=function(e) numeric(0))}
+                          )
+    x <- lapply(spike_times, function(x) x[x >= 2000] - 2000)
+    xlab <- "ms"
+    ylab <- sprintf("%s #", type)
+    main <- sprintf("%s Raster Plot", type)
+    xlim <- c(0, 1000)
+    nbTrains <- length(x)
+    acquisitionDuration <- max(xlim)
+    plot(c(0, acquisitionDuration), c(0, nbTrains + 1), type = "n", 
+       xlab = xlab, ylab = ylab, 
+       xlim = xlim, ylim = c(1, nbTrains + 1), bty = "n", main=main)
+    # abline(v=2000, lty=3, col="red")
+    invisible(sapply(1:nbTrains, 
+           function(idx) {
+               if (length(x[[idx]]) > 0)
+                rect(x[[idx]] - 0.000001, idx - 0.3, 
+                     x[[idx]] + 0.000001, idx+0.3)
+           }))
+}
+
+```
+
+```{r}
+plot_raster("MC")
+```
+
+## Fig 2E2
+
+```{r}
+plot_raster("GC")
+```
+
+## Fig 2F2
+
+```{r}
+plot_raster("PGC")
+```
+
+
+## Fig 2D3
+```{r}
+read_spikes <- function(type) {
+    n <- c("MC" = 5, "GC" = 10, "PGC" = 5)[type]
+    prefix <- c("MC" = "Ms", "GC" = "Gs", "PGC" = "Ps")[type]
+    ymax <- c("MC" = 10, "GC" = 20, "PGC" = 10)[type]
+    
+    combs <-expand.grid(j=seq(0, n-1), i=seq(0, n-1))
+    spike_files <- sprintf("%s_%d_%d", prefix, combs$i, combs$j)
+    spike_times <- lapply(spike_files, 
+                          function(fname) {
+                              tryCatch(
+                                  read.table(fname)$V1,
+                                  error=function(e) numeric(0))}
+                          )
+    return(spike_times)
+}
+```
+
+
+```{r}
+
+plot_spikes <- function(type) {
+    nextpow2 <- function(i) {
+        for (ii in 0:31) {
+            if (i < 2^ii) {
+                return(ii)
+            }
+        }
+        return(NULL)
+    }
+    
+    n <- c("MC" = 5, "GC" = 10, "PGC" = 5)[type]
+    prefix <- c("MC" = "Ms", "GC" = "Gs", "PGC" = "Ps")[type]
+    ymax <- c("MC" = 10, "GC" = 20, "PGC" = 10)[type]
+    
+    combs <-expand.grid(j=seq(0, n-1), i=seq(0, n-1))
+    spike_files <- sprintf("%s_%d_%d", prefix, combs$i, combs$j)
+    spike_times <- lapply(spike_files, 
+                          function(fname) {
+                              tryCatch(
+                                  read.table(fname)$V1,
+                                  error=function(e) numeric(0))}
+                          )
+    x <- spike_times
+    flat_x <- Reduce(function(ls1, ls2) c(ls1, ls2), x)
+    filt_x <- flat_x[(2000 <= flat_x) & (flat_x <= 3000)] - 2000
+    hist_values <- hist(filt_x, breaks=seq(0, 1000, 5), plot=FALSE)
+    middle <- hist_values$mids
+    counts <- hist_values$counts
+    
+    
+    par(mfrow=c(2, 1), mai=c(0.9, 0.8, 0.3, 0.1))
+    # par(mar=c(3, 4, 5, 2))
+    plot(middle, counts, type='l', lwd=1.75,
+         xlab="", xaxt="n", xlim=c(0, 1000),
+         ylab="", yaxt="n", ylim=c(0, ymax))
+    axis(1, at=seq(0, 1000, 200))
+    axis(2, at=seq(0, ymax, ymax/2))
+    title(main=sprintf("%s Spikes", type), xlab = "ms", ylab = "Spikes", cex.lab = 1.2, font.lab = 2)
+    
+    
+    y <- counts - mean(counts)
+    L <- length(y)
+    
+    NFFT <- 2^nextpow2(L)     # Next power of 2 from length of y
+    pad_y <- c(y, rep(0, NFFT-L))
+    Y <- fft(pad_y)/L
+    YY <- 2*abs(Y[1:(NFFT/2)])
+    
+    # Plot the data
+    
+    f <- seq(0, 100, length.out=NFFT/2)
+    # par(mar=c(5, 4, 0, 2))
+    plot(f, YY, type='l', xlim=c(0, 100), ylim=c(0, 3), lwd=1.75, xlab="", xaxt="n", ylab="", yaxt="n")
+    axis(1, at = seq(0, 100, by = 20))
+    axis(2, at = seq(0, 3, by = 1))
+    title(xlab = "Frequency (Hz)", ylab = "Power", cex.lab = 1.2, font.lab = 2)
+}
+
+```
+
+
+```{r}
+plot_spikes("MC")
+```
+
+## Fig 2E3
+
+```{r}
+plot_spikes("GC")
+```
+
+
+## Fig 2F3
+
+```{r}
+plot_spikes("PGC")
+```
+
+
+## Extra
+
+
+```{r}
+type <- "MC"
+n <- c("MC" = 5, "GC" = 10, "PGC" = 5)[type]
+prefix <- c("MC" = "Ms", "GC" = "Gs", "PGC" = "Ps")[type]
+ymax <- c("MC" = 10, "GC" = 20, "PGC" = 10)[type]
+
+combs <-expand.grid(j=seq(0, n-1), i=seq(0, n-1))
+spike_files <- sprintf("%s_%d_%d", prefix, combs$i, combs$j)
+spike_times <- lapply(spike_files, 
+                      function(fname) {
+                          tryCatch(
+                              read.table(fname)$V1,
+                              error=function(e) numeric(0))})
+x <- spike_times
+flat_x <- Reduce(function(ls1, ls2) c(ls1, ls2), x)
+filt_x <- flat_x[(2000 <= flat_x) & (flat_x <= 3000)] - 2000
+                          
+nextpow2 <- function(i) {
+    for (ii in 0:31) {
+        if (i < 2^ii) {
+            return(ii)
+        }
+    }
+    return(NULL)
+}
+
+# Set parameters
+FILORDER <- 1000
+DT <- 0.2  # sampling time in ms
+Fs <- 1 / DT * 1000  # sampling frequency in Hz
+Fc <- c(10, 100)  # Cut-off frequencies in Hz
+Wc <- Fc / (Fs / 2)  # Normalize the frequencies
+
+# Extract the desired portion of the signal
+T1 <- 2000
+T2 <- 3000
+n1 <- T1 / DT + 1
+n2 <- T2 / DT
+maxlags <- 2000 
+
+t <- tt[n1:n2]
+y <- Vam[n1:n2] - mean(Vam[n1:n2])  # Detrend the data by subtracting the mean
+
+### Compute sLFP ###
+
+
+### Compute Power ###
+Fmax <- 100
+L <- length(y)
+NFFT <- 2^nextpow2(L)     # Next power of 2 from length of y
+pad_y <- c(y, rep(0, NFFT-L))
+Y <- fft(pad_y)/L;
+YY <- 2*abs(Y[1:(NFFT/2)])
+
+f <- (Fs/2) * seq(0, 1, length.out=NFFT/2)
+m <- Fmax/(0.5*Fs)*(0.5*NFFT);
+m <- floor(m)
+
+
+# pad_x <- c(x, rep(0, NFFT-L))
+# X <- fft(pad_x)/L;
+# XX <- 2*abs(X[1:(NFFT/2)])
+
+test <- fft(spike_times[[1]])
+# Plot the data
+plot(f[1:m], YY[1:m], type='l', lwd=1.75, xlab="", xaxt="n", ylab="", yaxt="n")
+axis(1, at = seq(0, 100, by = 20)) 
+axis(2, at = seq(0, 3, by = 1))
+title(xlab = "Frequency (Hz)", ylab = "Power", cex.lab = 1.5, font.lab = 2)
+```
+
+
+```{r}
+type <- "MC"
+prefix <- c("MC" = "Vms", "GC" = "Vgb", "PGC" = "Vpb")[type]
+num_cells <- c("MC" = 25, "GC" = 100, "PGC" = 25)[type]
+v_signal <- rep(0, 15001)
+for (i in seq(0, sqrt(num_cells)-1)) {
+    for (j in seq(0, sqrt(num_cells)-1)) {
+        file_name <- sprintf("%s_%d_%d", prefix, i, j)
+        v_cell <- scan(file_name, quiet=TRUE)
+        v_signal <- v_signal + v_cell
+    }
+}
+v_signal <- v_signal / num_cells
+
+# Set parameters
+FILORDER <- 1000
+DT <- 0.2  # sampling time in ms
+Fs <- 1 / DT * 1000  # sampling frequency in Hz
+Fc <- c(10, 100)  # Cut-off frequencies in Hz
+Wc <- Fc / (Fs / 2)  # Normalize the frequencies
+
+# Extract the desired portion of the signal
+T1 <- 2000
+T2 <- 3000
+n1 <- T1 / DT + 1
+n2 <- T2 / DT
+maxlags <- 2000 
+
+t <- tt[n1:n2]
+y <- v_signal[n1:n2] - mean(v_signal[n1:n2])  # Detrend the data by subtracting the mean
+
+### Compute Power ###
+Fmax <- 100
+L <- length(y)
+NFFT <- 2^nextpow2(L)     # Next power of 2 from length of y
+pad_y <- c(y, rep(0, NFFT-L))
+Y <- fft(pad_y)/L;
+YY <- 2*abs(Y[1:(NFFT/2)])
+
+f <- (Fs/2) * seq(0, 1, length.out=NFFT/2)
+m <- Fmax/(0.5*Fs)*(0.5*NFFT)
+m <- floor(m)
+
+# Plot the data
+plot(f[1:m], YY[1:m], type='l', lwd=1.75, xlim=c(0, 100), ylim=c(0, 3), xlab="", xaxt="n", ylab="", yaxt="n")
+axis(1, at = seq(0, 100, by = 20)) 
+axis(2, at = seq(0, 3, by = 1))
+title(xlab = "Frequency (Hz)", ylab = "Power", cex.lab = 1.5, font.lab = 2)
+
+```
+
+```{r}
+type <- "PGC"
+n <- c("MC" = 5, "GC" = 10, "PGC" = 5)[type]
+prefix <- c("MC" = "Ms", "GC" = "Gs", "PGC" = "Ps")[type]
+ymax <- c("MC" = 10, "GC" = 20, "PGC" = 10)[type]
+
+combs <-expand.grid(j=seq(0, n-1), i=seq(0, n-1))
+spike_files <- sprintf("%s_%d_%d", prefix, combs$i, combs$j)
+spike_times <- lapply(spike_files, 
+                      function(fname) {
+                          tryCatch(
+                              read.table(fname)$V1,
+                              error=function(e) numeric(0))}
+                      )
+x <- spike_times
+flat_x <- Reduce(function(ls1, ls2) c(ls1, ls2), x)
+filt_x <- flat_x[(2000 <= flat_x) & (flat_x <= 3000)] - 2000
+hist_values <- hist(filt_x, breaks=seq(0, 1000, by=5),  plot=FALSE)
+middle <- hist_values$mids
+counts <- hist_values$counts 
+
+
+y <- counts - mean(counts)
+L <- length(y)
+
+NFFT <- 2^nextpow2(L)     # Next power of 2 from length of y
+pad_y <- c(y, rep(0, NFFT-L))
+Y <- fft(pad_y)/L
+YY <- 2*abs(Y[1:(NFFT/2)])
+
+# Plot the data
+
+f <- seq(0, 100, length.out=NFFT/2)
+
+plot(f, YY, type='l', xlim=c(0, 100), ylim=c(0, 3), lwd=1.75, xlab="", xaxt="n", ylab="", yaxt="n")
+axis(1, at = seq(0, 100, by = 20))
+axis(2, at = seq(0, 3, by = 1))
+title(xlab = "Frequency (Hz)", ylab = "Power", cex.lab = 1.5, font.lab = 2)
+```
+```{r}
+type <- "MC"
+n <- c("MC" = 5, "GC" = 10, "PGC" = 5)[type]
+prefix <- c("MC" = "Ms", "GC" = "Gs", "PGC" = "Ps")[type]
+ymax <- c("MC" = 10, "GC" = 20, "PGC" = 10)[type]
+
+combs <-expand.grid(j=seq(0, n-1), i=seq(0, n-1))
+spike_files <- sprintf("%s_%d_%d", prefix, combs$i, combs$j)
+spike_times <- lapply(spike_files, 
+                      function(fname) {
+                          tryCatch(
+                              read.table(fname)$V1,
+                              error=function(e) numeric(0))}
+                      )
+x <- spike_times
+flat_x <- Reduce(c, x)
+sort_x <- sort(flat_x)
+# sort_x
+test <- rep(0, length(seq(0, 3000, by=0.001)))
+test[sort_x * 1000 + 1] <- 1
+# plot(fft(test))
+```
+
+```{r}
+plot_spike_diff <- function(type, i, j) {
+    spikes <- read_spikes(type)
+    spikes_i <- spikes[[i]]
+    spikes_j <- spikes[[j]]
+    
+    spike_diff <- numeric(0)
+    
+    for (u in spikes_i) {
+        for (v in spikes_j) {
+            spike_diff <- append(spike_diff, u - v)
+        }
+    }
+    # spike_diff <- spike_diff[abs(spike_diff) <= 20]
+    # print(spike_diff)
+    title_str <- sprintf("%s Cell: Spikes[%d] - Spikes[%d]", type, i, j)
+    hist(spike_diff, breaks=seq(-3000, 3000, 5), xlab="",  ylab="", main="")
+    title(main = title_str, xlab = "Time Difference (ms)", ylab = "Frequency", xlim=c(-20, 20), cex.lab = 1.5, font.lab = 2)
+}
+
+plot_spike_diff("MC", 20, 21)
+
+```
+
+
+
+```{r}
+plot_solo <- function(cell1, type) {
+    prefix <- c("MC" = "Vms", "GC" = "Vgb", "PGC" = "Vpb")[type]
+    vs1_name <- sprintf("%s_%d_%d", prefix, cell1[1], cell1[2])
+    vs1 <- read.table(vs1_name)$V1
+    # Assuming tt has been loaded
+    lwd <- 2
+    plot(tt-2000, vs1, type="l", 
+         xlim=c(0, 1000), xlab="ms",
+         ylim=c(-80, 40), ylab="mV",
+         col="blue", lwd=lwd)
+} 
+
+plot_solo(c(2, 1), type="MC")
+```
+

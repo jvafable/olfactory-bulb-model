@@ -1,0 +1,204 @@
+
+% Plot cell membrane voltages of MCs, PGCs and GCs
+
+clc;
+clear all;
+close all;
+
+DT = 0.2;        % sampling time: ms
+T1 = 1000;
+T2 = 3000;
+n1 = T1/DT+2;
+n2 = T2/DT;
+
+nmitx = 5;
+nmity = 5;
+npgx  = 5;
+npgy  = 5;
+ngranx = 10;
+ngrany = 10;
+
+    
+load tt;
+t  = tt(n1:n2);
+
+for i = 0:1:4
+    
+   s = ['load Vmc22' '_' int2str(i) ';'];    
+   eval(s);
+        
+end
+
+
+for i = 0:1:(nmitx-1)
+   for j = 0:1:(nmity-1) 
+     s = ['load Vms' '_' int2str(i) '_' int2str(j) ';'];    
+     eval(s);
+     
+     s = ['U=Vms' '_' int2str(i) '_' int2str(j) ';'];
+     eval(s);
+     
+     U = U(n1:n2);
+     s = ['ms' '_' int2str(i) '_' int2str(j) '=U'  ';'];
+     eval(s);  
+   
+   end
+end
+
+for i = 0:1:(npgx-1)
+   for j = 0:1:(npgy-1) 
+    
+    s = ['load Vpb' '_' int2str(i) '_' int2str(j) ';'];    
+    eval(s);    
+    s = ['U=Vpb' '_' int2str(i) '_' int2str(j) ';'];
+    eval(s);
+    U = U(n1:n2);
+    s = ['pb' '_' int2str(i) '_' int2str(j) '=U'  ';'];
+    eval(s);    
+    
+   end
+end
+
+for i = 0:1:(ngranx-1)
+   for j = 0:1:(ngrany-1) 
+    
+    s = ['load Vgb' '_' int2str(i) '_' int2str(j) ';'];    
+    eval(s);    
+    s = ['U=Vgb' '_' int2str(i) '_' int2str(j) ';'];
+    eval(s);
+    U = U(n1:n2);
+    s = ['gb' '_' int2str(i) '_' int2str(j) '=U'  ';'];
+    eval(s); 
+
+   end
+end
+
+
+L = length(ms_0_0);
+
+
+
+%=====================================================
+%           Plot Voltage for Each Cell Type
+%=====================================================
+
+XT1 = 2000;
+XT2 = 3000;
+
+% For MC
+figure;
+subplot(2,1,1);
+plot(t,ms_0_1,'b', t, ms_4_1,'r','LineWidth',2);
+axis([XT1,XT2,-80,40]);
+title('MC', 'FontSize',14);
+set(gca, 'XTick',[ ]);
+box('off');
+legend('MC[0][1]','MC[4][1]');
+
+subplot(2,1,2);
+plot(t,ms_3_4,'b',t,ms_2_4,'r', 'LineWidth', 2);
+axis([XT1,XT2,-80,40]);
+box('off');
+legend('MC[3][4]', 'MC[2][4]'); 
+
+
+figure;
+subplot(2,1,1);
+plot(t,ms_3_2,'b', t, ms_4_3,'r','LineWidth',2);
+axis([XT1,XT2,-80,40]);
+title('MC', 'FontSize',14);
+set(gca, 'XTick',[ ]);
+box('off');
+legend('MC[3][2]','MC[4][3]');
+
+subplot(2,1,2);
+plot(t,ms_1_1,'b',t,ms_1_4,'r', 'LineWidth', 2);
+axis([XT1,XT2,-80,40]);
+box('off');
+legend('MC[1][1]', 'MC[1][4]'); 
+
+
+
+% % ==================================
+% For PG
+figure;
+subplot(2,1,1);
+plot(t,pb_0_1,'b', t,pb_1_0,'r', 'LineWidth',2);
+axis([XT1,XT2,-80,40]);
+set(gca, 'XTick',[ ]);
+title('PG', 'FontSize',14);
+box('off');
+
+subplot(2,1,2);
+plot(t,pb_2_3,'b', t,pb_3_2,'r', 'LineWidth',2);
+axis([XT1,XT2,-80,40]);
+set(gca, 'XTick',[ ]);
+box('off');
+
+
+% % ====================
+% % For GC
+figure;
+subplot(2,1,1);
+plot(t,gb_0_1,'b', t,gb_3_2,'r','LineWidth',2);
+axis([XT1,XT2,-80,40]);
+ylabel('mV', 'FontSize',14);
+set(gca, 'XTick',[ ]);
+set(gca, 'FontSize',12);
+title('GC', 'FontSize',14);
+box('off');
+
+subplot(2,1,2);
+plot(t,gb_5_9,'b', t,gb_9_5,'r','LineWidth',2);
+axis([XT1,XT2,-80,40]);
+set(gca, 'XTick',[ ]);
+set(gca, 'FontSize',12);
+box('off');
+
+
+figure;
+subplot(2,1,1);
+plot(t,gb_2_4,'b', t,gb_6_5,'r','LineWidth',2);
+axis([XT1,XT2,-80,40]);
+ylabel('mV', 'FontSize',14);
+set(gca, 'XTick',[ ]);
+set(gca, 'FontSize',12);
+title('GC', 'FontSize',14);
+box('off');
+
+subplot(2,1,2);
+plot(t,gb_7_7,'b', t,gb_8_1,'r','LineWidth',2);
+axis([XT1,XT2,-80,40]);
+set(gca, 'XTick',[ ]);
+set(gca, 'FontSize',12);
+box('off');
+
+
+%===========================================
+
+for i = 0:1:(nmitx-1)
+   for j = 0:1:(nmity-1) 
+     s = ['clear Vms' '_' int2str(i) '_' int2str(j) ';'];    
+     eval(s);       
+    end
+end
+
+for i = 0:1:(npgx-1)
+   for j = 0:1:(npgy-1) 
+     s = ['clear Vpb' '_' int2str(i) '_' int2str(j) ';'];    
+     eval(s);
+    end
+end
+
+
+for i = 0:1:(ngranx-1)
+   for j = 0:1:(ngrany-1) 
+ 
+     s = ['clear Vgb' '_' int2str(i) '_' int2str(j) ';'];    
+     eval(s);     
+      
+    end
+end
+
+
+clear U
