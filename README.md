@@ -30,7 +30,7 @@ This repository contains three folders:
 - **OBGAMMA** : This folder contains the NEURON simulation code for the model by [Li and Cleland (2017)](#references). It also contains a jupyter notebook `simulator.ipynb` to help run and interface with the NEURON simulation. 
 - **simulation_data** : This folder contains the simulation results for the default model simulation along with the results for different seeds and connectivity parameters. Each set of data contains an R markdown notebook `plotting.rmd` for generating plots.
 
-Ensure that NEURON, Python, and R are installed before proceeding. The following instructions are intended for a Unix machine. If you are using Windows, you may run into some problems running NEURON. If you are using macOS and/or encounter some problems, please follow the steps to download and run the simulation detailed in Appendix A of my paper.
+Ensure that NEURON, Python, and R are installed before proceeding. The following instructions are intended for a Unix machine. If you wish to run the model as-is from ModelDB, please see Appendix A of my paper which details the steps to do so. If you are using Windows, you may run into some problems running NEURON. If you are using macOS and/or encounter some problems, please follow the steps to download and run the simulation detailed in Appendix A of my paper.
 
 In order to run the simulation, please follow these steps:
 
@@ -64,7 +64,7 @@ Once the simulation has finished (may take up to 2 hours), ensure that you save 
 
 In order to generate plots based on the results of a simulation, you may use any of the `plotting.rmd` files in any of the **simulation_data** scenarios as a template. Make sure to set the working directory in R to the appropriate data folder on your machine in order for the correct plots to generate.
 
-If you wish to modify any of the parameters of the simulation, please modify the corresponding variable in the `Parameter.hoc` file. 
+If you wish to modify any of the parameters of the simulation, please modify the corresponding variable in the `Parameter.hoc` file which may be found under the **OBGAMMA** folder. 
 
 ## References
 - Dayan, P., and L. F. Abbott. 2001. _Theoretical Neuroscience: Computational and Mathematical Modeling of Neural Systems_. The MIT Press.
