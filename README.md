@@ -51,7 +51,7 @@ source env/bin/activate
 ```
 5. Install all dependencies in the requirements.txt file using pip.
 ```
-pip3 install -r requirments.txt
+pip3 install -r requirements.txt
 ```
 6. Compile the NEURON files.
 ```
